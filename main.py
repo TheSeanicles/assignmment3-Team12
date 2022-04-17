@@ -42,12 +42,12 @@ def config_parse():
     # Use Yaml library to parse config program tunables
     with open('config.yml', 'r') as file:
         config_file = yaml.safe_load(file)
-    return_item = ConfigTunables(config_file['flask']['host_address'],  # 0
-                                 config_file['flask']['port'],          # 1
-                                 config_file['canvas']['course_id'],    # 2
-                                 config_file['canvas']['access_token'], # 3
-                                 config_file['led']['host_address'],    # 4
-                                 config_file['led']['port'])            # 5
+    return_item = ConfigTunables(config_file['flask']['host_address'],   # 0
+                                 config_file['flask']['port'],           # 1
+                                 config_file['canvas']['course_id'],     # 2
+                                 config_file['canvas']['access_token'],  # 3
+                                 config_file['led']['host_address'],     # 4
+                                 config_file['led']['port'])             # 5
     return return_item
 
 
@@ -95,7 +95,7 @@ class FlaskApplication(Resource):
         if curl_input.find('LED?') != -1:
             led_request(curl_input)
         elif curl_input.find('Canvas?') != -1:
-            canvas_request(curl_input, config)
+            canvas_request(curl_input)
         else:
             print('ERROR')
 
