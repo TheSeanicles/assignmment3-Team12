@@ -40,7 +40,8 @@ class LEDInputs(NamedTuple):
 
 def config_parse():
     # Use Yaml library to parse config program tunables
-    with open('config.yml', 'r') as file:
+    current_path = os.path.abspath(os.getcwd())
+    with open(current_path + '\\\\config.yml', 'r') as file:
         config_file = yaml.safe_load(file)
     return_item = ConfigTunables(config_file['flask']['host_address'],   # 0
                                  config_file['flask']['port'],           # 1
@@ -93,9 +94,9 @@ def led_request(input_string):
 class FlaskApplication(Resource):
     def curl_in(self, curl_input):
         if curl_input.find('LED?') != -1:
-            led_request(curl_input)
+            led_return = led_request(curl_input)
         elif curl_input.find('Canvas?') != -1:
-            canvas_request(curl_input)
+            canvas_return = canvas_request(curl_input)
         else:
             print('ERROR')
 
