@@ -7,3 +7,4 @@ canvas:
 led:
   host_address: ''
   port: 34785
+mongodb:

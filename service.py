@@ -91,7 +91,22 @@ def led_request(input_string):
     return r
 
 
-class FlaskApplication(Resource):
+# class FlaskApplication(Resource):
+#     def curl_in(self, curl_input):
+#         if curl_input.find('LED?') != -1:
+#             led_return = led_request(curl_input)
+#         elif curl_input.find('Canvas?') != -1:
+#             canvas_return = canvas_request(curl_input)
+#         else:
+#             print('ERROR')
+
+
+def main():
+    app = Flask(__name__)
+    # api = Api(app)
+    # api.add_resource(FlaskApplication, '/<string:curl_input>')
+
+    @app.route('/<string:curl_input>')
     def curl_in(self, curl_input):
         if curl_input.find('LED?') != -1:
             led_return = led_request(curl_input)
@@ -99,12 +114,6 @@ class FlaskApplication(Resource):
             canvas_return = canvas_request(curl_input)
         else:
             print('ERROR')
-
-
-def main():
-    app = Flask(__name__)
-    api = Api(app)
-    api.add_resource(FlaskApplication, '/<string:curl_input>')
     app.run(host=config[0], port=config[1], debug=True)
 
 
