@@ -41,7 +41,7 @@ class LEDInputs(NamedTuple):
 def config_parse():
     # Use Yaml library to parse config program tunables
     current_path = os.path.abspath(os.getcwd())
-    with open(current_path + '\\\\config.yml', 'r') as file:
+    with open(current_path + '\\\\service_config.yml', 'r') as file:
         config_file = yaml.safe_load(file)
     return_item = ConfigTunables(config_file['flask']['host_address'],   # 0
                                  config_file['flask']['port'],           # 1
@@ -85,7 +85,7 @@ def canvas_request(input_string):
 
 def led_request(input_string):
     l = led_parse(input_string)
-    r = requests.get('http://' + l[5] + ':' + l[6] +
+    r = requests.get('http://' + l[5] + ':' + str(l[6]) +
                      '/LED?' + l[2] + '&' + l[3] + '&' + l[4])
     return r
 
