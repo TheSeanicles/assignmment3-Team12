@@ -53,67 +53,62 @@ def config_parse():
 
 
 config = config_parse()
-print(config)
 
 
 def canvas_parse(input_string):
-    course_id = config['canvas_course_id']
-    token = config['canvas_access_token']
-    file = input_string.partition('file=')[2]
+    course_id = config[2]
+    token = config[3]
+    file = input_string
     return_item = CanvasInputs(input_string, course_id, token, file)
     return return_item
 
 
 def led_parse(input_string):
-    led_command = input_string.partition('command=')[2]
+    led_command = input_string
     tmp = led_command.split('-')
     led_status = tmp[0]
     led_color = tmp[1]
     led_intensity = tmp[2]
-    host_address = config['led_host_address']
-    port = config['led_port']
+    host_address = config[4]
+    port = config[5]
     return_item = LEDInputs(input_string, led_command, led_status, led_color, led_intensity, host_address, port)
     return return_item
 
 
 def canvas_request(input_string):
     c = canvas_parse(input_string)
-    r = requests.get('https://vt.instructure.com/api/v1/courses/' + c['course_id'] +
-                     '/files/' + c['file'] +
-                     '?access_token=' + c['token'])
+    r = requests.get('https://vt.instructure.com/api/v1/courses/' + c[1] +
+                     '/files/' + c[3] +
+                     '?access_token=' + c[2])
     return r
 
 
 def led_request(input_string):
     l = led_parse(input_string)
-    r = requests.get('http://' + l['host_address'] + ':' + l['port'] +
-                     '/LED?' + l['status'] + '&' + l['color'] + '&' + l['intensity'])
+    r = requests.get('http://' + l[5] + ':' + l[6] +
+                     '/LED?' + l[2] + '&' + l[3] + '&' + l[4])
     return r
-
-
-# class FlaskApplication(Resource):
-#     def curl_in(self, curl_input):
-#         if curl_input.find('LED?') != -1:
-#             led_return = led_request(curl_input)
-#         elif curl_input.find('Canvas?') != -1:
-#             canvas_return = canvas_request(curl_input)
-#         else:
-#             print('ERROR')
 
 
 def main():
     app = Flask(__name__)
-    # api = Api(app)
-    # api.add_resource(FlaskApplication, '/<string:curl_input>')
 
-    @app.route('/<string:curl_input>')
-    def curl_in(self, curl_input):
-        if curl_input.find('LED?') != -1:
-            led_return = led_request(curl_input)
-        elif curl_input.find('Canvas?') != -1:
-            canvas_return = canvas_request(curl_input)
-        else:
-            print('ERROR')
+    @app.route('/Canvas')
+    def canvas():
+        args = request.args
+        if 'file' in args:
+            filename = args['file']
+            print(canvas_request(filename).text)
+        return 'DONE\n'
+
+    @app.route('/LED')
+    def led():
+        args = request.args
+        if 'command' in args:
+            command = args['command']
+            print(led_request(command).text)
+        return 'DONE\n'
+
     app.run(host=config[0], port=config[1], debug=True)
 
 
