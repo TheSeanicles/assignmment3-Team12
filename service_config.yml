@@ -1,0 +1,10 @@
+flask:
+  host_address: 'localhost'
+  port: 8081
+canvas:
+  course_id: ''
+  access_token: ''
+led:
+  host_address: ''
+  port: 7346
+mongodb:
