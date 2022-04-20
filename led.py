@@ -42,10 +42,10 @@ if 0 < led_port < 65535:
                                    addresses=host_address_bytes,
                                    properties=led_zeroconf_stats,
                                    port=led_port)
-    led_service.register_service(info=led_service_info)
-    led_service.generate_service_broadcast(info=led_service_info,
-                                           ttl=64,
-                                           broadcast_addresses=True)
+    # led_service.register_service(info=led_service_info)
+    # led_service.generate_service_broadcast(info=led_service_info,
+    #                                        ttl=64,
+    #                                        broadcast_addresses=True)
     led_service.start()
 
 
@@ -125,8 +125,8 @@ def threaded_client(connection):
     connection.close()
 
 
+execute_command('off', 'white', '0',)
 while True:
-    execute_command('off', 'white', '0',)
     Client, address = ServerSocket.accept()
     print('Accepted client connection from ' + address[0] + ' on port ' + str(address[1]))
     start_new_thread(threaded_client, (Client,))

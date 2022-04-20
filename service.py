@@ -2,6 +2,7 @@ from flask import Flask, request
 from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
 import time
 import yaml
+import socket
 from typing import NamedTuple
 import subprocess
 import requests
@@ -13,29 +14,30 @@ class MyListener(ServiceListener):
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
         print(f"Service {name} updated")
-        # for ip in info.addresses:
-        #     print('IP ADDRESS: ', end='')
-        #     print(socket.inet_ntoa(ip))
-        # print('PORT: ', end='')
-        # print(info.port)
+        for ip in info.addresses:
+            print(f'IP ADDRESS: {socket.inet_ntoa(ip)}')
+        print(f'PORT: {info.port}')
         # status_options = info.properties[b'STATUS'].decode('utf-8')
         # color_options = info.properties[b'COLOR'].decode('utf-8')
         # intensity_options = info.properties[b'INTENSITY'].decode('utf-8')
-        # status = info.properties[b'CURRENT_STATUS'].decode('utf-8')
-        # color = info.properties[b'CURRENT_COLOR'].decode('utf-8')
-        # intensity = info.properties[b'CURRENT_INTENSITY'].decode('utf-8')
-        # print('LED STATUS OPTIONS: ', end='')
-        # print(status_options)
-        # print('LED COLOR OPTIONS: ', end='')
-        # print(color_options)
-        # print('LED INTENSITY OPTIONS: ', end='')
-        # print(intensity_options)
-        # print('CURRENT LED STATUS: ', end='')
-        # print(status)
-        # print('CURRENT LED COLOR: ', end='')
-        # print(color)
-        # print('CURRENT LED INTENSITY: ', end='')
-        # print(intensity)
+        status = info.properties[b'CURRENT_STATUS'].decode('utf-8')
+        color = info.properties[b'CURRENT_COLOR'].decode('utf-8')
+        intensity = info.properties[b'CURRENT_INTENSITY'].decode('utf-8')
+        # print(f'LED STATUS OPTIONS: {status_options}')
+        # print(f'LED COLOR OPTIONS: {color_options}')
+        # print(f'LED INTENSITY OPTIONS: {intensity_options}')
+        print(f'CURRENT LED STATUS: {status}')
+        print(f'CURRENT LED COLOR: {color}')
+        print(f'CURRENT LED INTENSITY: {intensity}')
+
+        with open('service_config.yml', 'r') as file:
+            dict_file = yaml.safe_load(file)
+
+        dict_file['led']['host_address'] = str(socket.inet_ntoa(info.addresses[0]))
+        dict_file['led']['port'] = info.port
+
+        with open(r'service_config.yml', 'w') as file:
+            yaml.dump(dict_file, file)
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         print(f"Service {name} removed")
@@ -43,29 +45,30 @@ class MyListener(ServiceListener):
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
         print(f"Service {name} added, service info: ")
-        # for ip in info.addresses:
-        #     print('IP ADDRESS: ', end='')
-        #     print(socket.inet_ntoa(ip))
-        # print('PORT: ', end='')
-        # print(info.port)
-        # status_options = info.properties[b'STATUS'].decode('utf-8')
-        # color_options = info.properties[b'COLOR'].decode('utf-8')
-        # intensity_options = info.properties[b'INTENSITY'].decode('utf-8')
+        for ip in info.addresses:
+            print(f'IP ADDRESS: {socket.inet_ntoa(ip)}')
+        print(f'PORT: {info.port}')
+        status_options = info.properties[b'STATUS'].decode('utf-8')
+        color_options = info.properties[b'COLOR'].decode('utf-8')
+        intensity_options = info.properties[b'INTENSITY'].decode('utf-8')
         # status = info.properties[b'CURRENT_STATUS'].decode('utf-8')
         # color = info.properties[b'CURRENT_COLOR'].decode('utf-8')
         # intensity = info.properties[b'CURRENT_INTENSITY'].decode('utf-8')
-        # print('LED STATUS OPTIONS: ', end='')
-        # print(status_options)
-        # print('LED COLOR OPTIONS: ', end='')
-        # print(color_options)
-        # print('LED INTENSITY OPTIONS: ', end='')
-        # print(intensity_options)
-        # print('CURRENT LED STATUS: ', end='')
-        # print(status)
-        # print('CURRENT LED COLOR: ', end='')
-        # print(color)
-        # print('CURRENT LED INTENSITY: ', end='')
-        # print(intensity)
+        print(f'LED STATUS OPTIONS: {status_options}')
+        print(f'LED COLOR OPTIONS: {color_options}')
+        print(f'LED INTENSITY OPTIONS: {intensity_options}')
+        # print(f'CURRENT LED STATUS: {status}')
+        # print(f'CURRENT LED COLOR: {color}')
+        # print(f'CURRENT LED INTENSITY: {intensity}'))
+
+        with open('service_config.yml', 'r') as file:
+            dict_file = yaml.safe_load(file)
+
+        dict_file['led']['host_address'] = str(socket.inet_ntoa(info.addresses[0]))
+        dict_file['led']['port'] = info.port
+
+        with open(r'service_config.yml', 'w') as file:
+            yaml.dump(dict_file, file)
 
 
 class ConfigTunables(NamedTuple):
@@ -101,8 +104,10 @@ class LEDInputs(NamedTuple):
 
 def config_parse():
     # Use Yaml library to parse config program tunables
-    current_path = os.path.abspath(os.getcwd())
-    with open(current_path + '\\\\service_config.yml', 'r') as file:
+    # current_path = os.path.abspath(os.getcwd())
+    # with open(current_path + '\\\\service_config.yml', 'r') as file:
+    #     config_file = yaml.safe_load(file)
+    with open('service_config.yml', 'r') as file:
         config_file = yaml.safe_load(file)
     return_item = ConfigTunables(config_file['flask']['host_address'],   # 0
                                  config_file['flask']['port'],           # 1
@@ -155,7 +160,7 @@ def led_request(input_string, status, color, intensity):
     elif not(l[4] in intensity):
         print(f"{l[4]} not in intensity range 0 to 255")
         return
-    r = requests.get(url='http://' + l[5] + ':' + str(l[6]) +
+    r = requests.post(url='http://' + l[5] + ':' + str(l[6]) +
                     '/LED?status=' + l[2] + '&color=' + l[3] + '&intensity=' + l[4],
                      headers={'Connection': 'close'})
     return r
