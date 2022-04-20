@@ -1,5 +1,5 @@
 canvas:
-  access_token: 4511~UE3RGdDVr8nLEWUuvx3EwE0pdNEFd7ZGbMF1zQ8L5PvFWWGcCyL56xqfLbUWc7JC
+  access_token: 4511~WCSGB3WbHDUmamuC5ktWnAWmRvIYbejFoCaG340oJ17IpePXQcka5GsTI6HJX7hW
   course_id: '145421'
 flask:
   host_address: localhost

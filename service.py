@@ -141,11 +141,13 @@ def led_parse(input_string):
     return return_item
 
 
-def canvas_request(input_string):
-    c = canvas_parse(input_string)
-    r = requests.get(url='https://vt.instructure.com/api/v1/courses/' + c[1] +
-                     '/files/' + c[3] +
-                     '?access_token=' + c[2])
+def canvas_get_request(filename, operation):
+    r = requests.get()
+    return r
+
+
+def canvas_post_request(filename, operation):
+    r = requests.post()
     return r
 
 
@@ -177,9 +179,9 @@ def main():
     listener = MyListener()
     ServiceBrowser(zeroconf, "_LED._tcp.local.", listener)
     info = zeroconf.get_service_info('_LED._tcp.local.', 'rasberrypi._LED._tcp.local.')
-    while info == None:
-        print('No pi LED found retrying in: ',end='')
-        print('5',end='')
+    while info is None:
+        print('No pi LED found retrying in: ', end='')
+        print('5', end='')
         time.sleep(0.25)
         print('.', end='')
         time.sleep(0.25)
@@ -225,12 +227,18 @@ def main():
 
     app = Flask(__name__)
 
+    # https://127.0.0.1:5000/Canvas?file=<filename>&operation=<upload or download>
+
     @app.route('/Canvas')
     def canvas():
         args = request.args
-        if 'file' in args:
+        if 'operation' in args:
             filename = args['file']
-            print(canvas_request(filename).text)
+            operation = args['operation']
+            if operation == 'upload':
+                print(canvas_post_request(filename, operation).text)
+            elif operation == 'download':
+                print(canvas_get_request(filename, operation).text)
         return 'DONE\n'
 
     @app.route('/LED')
