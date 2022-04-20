@@ -149,7 +149,7 @@ def canvas_request(input_string):
     return r
 
 
-def led_request(input_string, status, color, intensity):
+def led_post_request(input_string, status, color, intensity):
     l = led_parse(input_string)
     if not(l[2] in status):
         print(f"{l[2]} not a choice of {status}")
@@ -161,7 +161,13 @@ def led_request(input_string, status, color, intensity):
         print(f"{l[4]} not in intensity range 0 to 255")
         return
     r = requests.post(url='http://' + l[5] + ':' + str(l[6]) +
-                    '/LED?status=' + l[2] + '&color=' + l[3] + '&intensity=' + l[4],
+                      '/LED?status=' + l[2] + '&color=' + l[3] + '&intensity=' + l[4],
+                      headers={'Connection': 'close'})
+    return r
+
+
+def led_get_request():
+    r = requests.get(url='http://' + config[4] + ':' + str(config[5]) + '/LED',
                      headers={'Connection': 'close'})
     return r
 
@@ -232,8 +238,10 @@ def main():
         args = request.args
         if 'command' in args:
             command = args['command']
-            print(led_request(command, status_options, color_options, intensity_options).text)
-        return 'DONE\n'
+            print(led_post_request(command, status_options, color_options, intensity_options).text)
+            return 'DONE\n'
+        else:
+            return(led_get_request().text)
 
     app.run(host=config[0], port=config[1], debug=True)
 

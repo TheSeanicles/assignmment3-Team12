@@ -104,24 +104,27 @@ def threaded_client(connection):
     data = connection.recv(socket_size)
     if data:
         print(data)
-        command = data.decode('utf-8').partition('LED?')[2].partition(' HTTP')[0]
-        status_command = command.partition('status=')[2].partition('&')[0]
-        color_command = command.partition('color=')[2].partition('&')[0]
-        intensity_command = command.partition('intensity=')[2]
+        if data.decode('utf-8').find('LED?') != -1:
+            command = data.decode('utf-8').partition('LED?')[2].partition(' HTTP')[0]
+            status_command = command.partition('status=')[2].partition('&')[0]
+            color_command = command.partition('color=')[2].partition('&')[0]
+            intensity_command = command.partition('intensity=')[2]
 
-        if not (status_command in led_zeroconf_stats['STATUS']):
-            print('Invalid led status.')
-            connection.send(str.encode('HTTP/1.1 200 OK\r\nConnection: close'))
-        elif not(color_command in led_zeroconf_stats['COLOR']):
-            print('Invalid led color.')
-            connection.send(str.encode('HTTP/1.1 200 OK\r\nConnection: close'))
-        elif not(0 <= int(intensity_command) <= 255):
-            print('Invalid led intensity, 0 to 255.')
-            connection.send(str.encode('HTTP/1.1 200 OK\r\nConnection: close'))
+            if not (status_command in led_zeroconf_stats['STATUS']):
+                print('Invalid led status.')
+                connection.send(str.encode('HTTP/1.1 200 OK\r\nConnection: close'))
+            elif not(color_command in led_zeroconf_stats['COLOR']):
+                print('Invalid led color.')
+                connection.send(str.encode('HTTP/1.1 200 OK\r\nConnection: close'))
+            elif not(0 <= int(intensity_command) <= 255):
+                print('Invalid led intensity, 0 to 255.')
+                connection.send(str.encode('HTTP/1.1 200 OK\r\nConnection: close'))
+            else:
+                execute_command(status_command, color_command, intensity_command)
+                print('DONE')
+                connection.send(str.encode('HTTP/1.1 200 OK\r\nConnection: close'))
         else:
-            execute_command(status_command, color_command, intensity_command)
-            print('DONE')
-            connection.send(str.encode('HTTP/1.1 200 OK\r\nConnection: close'))
+            connection.send(str.encode(f"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n {led_zeroconf_stats['CURRENT_STATUS']}, {led_zeroconf_stats['CURRENT_COLOR']}, {led_zeroconf_stats['CURRENT_INTENSITY']}\r\n"))
     connection.close()
 
 
