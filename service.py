@@ -18,27 +18,30 @@ class MyListener(ServiceListener):
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
         print(f"Service {name} updated")
-        for ip in info.addresses:
-            print(f'IP ADDRESS: {socket.inet_ntoa(ip)}')
-        print(f'PORT: {info.port}')
+        # for ip in info.addresses:
+        #     print(f'IP ADDRESS: {socket.inet_ntoa(ip)}')
+        # print(f'PORT: {info.port}')
         # status_options = info.properties[b'STATUS'].decode('utf-8')
         # color_options = info.properties[b'COLOR'].decode('utf-8')
         # intensity_options = info.properties[b'INTENSITY'].decode('utf-8')
-        status = info.properties[b'CURRENT_STATUS'].decode('utf-8')
-        color = info.properties[b'CURRENT_COLOR'].decode('utf-8')
-        intensity = info.properties[b'CURRENT_INTENSITY'].decode('utf-8')
+        # status = info.properties[b'CURRENT_STATUS'].decode('utf-8')
+        # color = info.properties[b'CURRENT_COLOR'].decode('utf-8')
+        # intensity = info.properties[b'CURRENT_INTENSITY'].decode('utf-8')
         # print(f'LED STATUS OPTIONS: {status_options}')
         # print(f'LED COLOR OPTIONS: {color_options}')
         # print(f'LED INTENSITY OPTIONS: {intensity_options}')
-        print(f'CURRENT LED STATUS: {status}')
-        print(f'CURRENT LED COLOR: {color}')
-        print(f'CURRENT LED INTENSITY: {intensity}')
+        # print(f'CURRENT LED STATUS: {status}')
+        # print(f'CURRENT LED COLOR: {color}')
+        # print(f'CURRENT LED INTENSITY: {intensity}')
+
+        time.sleep(10)
 
         with open('service_config.yml', 'r') as file:
             dict_file = yaml.safe_load(file)
 
-        dict_file['led']['host_address'] = str(socket.inet_ntoa(info.addresses[0]))
-        dict_file['led']['port'] = info.port
+        if 'led' in dict_file:
+            dict_file['led']['host_address'] = str(socket.inet_ntoa(info.addresses[0]))
+            dict_file['led']['port'] = info.port
 
         with open(r'service_config.yml', 'w') as file:
             yaml.dump(dict_file, file)
@@ -48,28 +51,31 @@ class MyListener(ServiceListener):
 
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
-        print(f"Service {name} added, service info: ")
-        for ip in info.addresses:
-            print(f'IP ADDRESS: {socket.inet_ntoa(ip)}')
-        print(f'PORT: {info.port}')
-        status_options = info.properties[b'STATUS'].decode('utf-8')
-        color_options = info.properties[b'COLOR'].decode('utf-8')
-        intensity_options = info.properties[b'INTENSITY'].decode('utf-8')
+        print(f"Service {name} added")
+        # for ip in info.addresses:
+        #     print(f'IP ADDRESS: {socket.inet_ntoa(ip)}')
+        # print(f'PORT: {info.port}')
+        # status_options = info.properties[b'STATUS'].decode('utf-8')
+        # color_options = info.properties[b'COLOR'].decode('utf-8')
+        # intensity_options = info.properties[b'INTENSITY'].decode('utf-8')
         # status = info.properties[b'CURRENT_STATUS'].decode('utf-8')
         # color = info.properties[b'CURRENT_COLOR'].decode('utf-8')
         # intensity = info.properties[b'CURRENT_INTENSITY'].decode('utf-8')
-        print(f'LED STATUS OPTIONS: {status_options}')
-        print(f'LED COLOR OPTIONS: {color_options}')
-        print(f'LED INTENSITY OPTIONS: {intensity_options}')
+        # print(f'LED STATUS OPTIONS: {status_options}')
+        # print(f'LED COLOR OPTIONS: {color_options}')
+        # print(f'LED INTENSITY OPTIONS: {intensity_options}')
         # print(f'CURRENT LED STATUS: {status}')
         # print(f'CURRENT LED COLOR: {color}')
         # print(f'CURRENT LED INTENSITY: {intensity}'))
 
+        time.sleep(10)
+
         with open('service_config.yml', 'r') as file:
             dict_file = yaml.safe_load(file)
 
-        dict_file['led']['host_address'] = str(socket.inet_ntoa(info.addresses[0]))
-        dict_file['led']['port'] = info.port
+        if 'led' in dict_file:
+            dict_file['led']['host_address'] = str(socket.inet_ntoa(info.addresses[0]))
+            dict_file['led']['port'] = info.port
 
         with open(r'service_config.yml', 'w') as file:
             yaml.dump(dict_file, file)
@@ -178,7 +184,6 @@ def canvas_get_request(filename):
                 with open(filename, 'wb') as f:
                     f.write(r2.content)
                 return r2.text
-    return 'Course was not Found\n'
 
 
 def canvas_post_request(filename):
@@ -233,15 +238,19 @@ def canvas_post_request(filename):
 
     parameters['content_type'] = upload_params['content_type']
 
-    file = open(filename, 'rb')
+    try:
+        file = open(filename, 'rb')
 
-    parameters['file'] = file
+        parameters['file'] = file
 
-    files = {'file': file}
+        files = {'file': file}
 
-    r3 = requests.post(upload_url, files=files)
+        r3 = requests.post(upload_url, files=files)
 
-    return r3.text
+        return r3.text
+
+    except:
+        return 'File not found'
 
 
 def led_post_request(input_string, status, color, intensity):
@@ -272,12 +281,18 @@ def main():
     listener = MyListener()
     ServiceBrowser(zeroconf, "_LED._tcp.local.", listener)
     info = zeroconf.get_service_info('_LED._tcp.local.', 'rasberrypi._LED._tcp.local.')
+
     while info is None:
         print('No pi LED found retrying in 5 seconds.')
         time.sleep(5)
         info = zeroconf.get_service_info('_LED._tcp.local.', 'rasberrypi._LED._tcp.local.')
+
+    time.sleep(5)
+
     status_options = info.properties[b'STATUS'].decode('utf-8')
+
     color_options = info.properties[b'COLOR'].decode('utf-8')
+
     intensity_options = info.properties[b'INTENSITY'].decode('utf-8')
 
     app = Flask(__name__)
@@ -295,10 +310,16 @@ def main():
                 filename = args['file']
                 operation = args['operation']
                 if operation == 'upload':
-                    print(canvas_post_request(filename))
+                    r = canvas_post_request(filename)
+                    if r == 'File not found':
+                        return 'File not found\n'
+                    else:
+                        return 'DONE\n'
                 elif operation == 'download':
-                    print(canvas_get_request(filename))
-            return 'DONE\n'
+                    canvas_get_request(filename)
+                    return 'DONE\n'
+            else:
+                return 'No operation detected.\n'
         else:
             return 'Could not verify your access level for that URL.  You have to login with proper credentials\n'
 
@@ -322,7 +343,7 @@ def main():
     @auth.verify_password
     def verify_password(username, password):
         mongoclient = MongoClient("mongodb://localhost:27017")
-        db = mongoclient["ECE4565_Assignment_3"]
+        db = mongoclient["ECE4564_Assignment_3"]
         col = db["service_auth"]
         x = col.find_one({"username": username, "password": password})
         if x is None:
