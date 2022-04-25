@@ -2,3 +2,5 @@ Flask==2.1.1
 PyYAML==6.0
 requests==2.27.1
 zeroconf==0.38.4
+pymongo==4.1.1
+Flask-HTTPAuth==4.6.0
