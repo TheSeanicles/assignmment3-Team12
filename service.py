@@ -10,7 +10,6 @@ import subprocess
 import requests
 import json
 from collections import OrderedDict
-import os
 
 
 class MyListener(ServiceListener):
@@ -34,17 +33,21 @@ class MyListener(ServiceListener):
         # print(f'CURRENT LED COLOR: {color}')
         # print(f'CURRENT LED INTENSITY: {intensity}')
 
-        time.sleep(10)
+        # time.sleep(10)
 
         with open('service_config.yml', 'r') as file:
             dict_file = yaml.safe_load(file)
 
-        if 'led' in dict_file:
+        try:
             dict_file['led']['host_address'] = str(socket.inet_ntoa(info.addresses[0]))
             dict_file['led']['port'] = info.port
 
-        with open(r'service_config.yml', 'w') as file:
-            yaml.dump(dict_file, file)
+            with open(r'service_config.yml', 'w') as file:
+                yaml.dump(dict_file, file)
+
+        except TypeError:
+            with open(r'service_config.yml', 'w') as file:
+                yaml.dump(dict_file, file)
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         print(f"Service {name} removed")
@@ -68,17 +71,21 @@ class MyListener(ServiceListener):
         # print(f'CURRENT LED COLOR: {color}')
         # print(f'CURRENT LED INTENSITY: {intensity}'))
 
-        time.sleep(10)
+        # time.sleep(10)
 
         with open('service_config.yml', 'r') as file:
             dict_file = yaml.safe_load(file)
 
-        if 'led' in dict_file:
+        try:
             dict_file['led']['host_address'] = str(socket.inet_ntoa(info.addresses[0]))
             dict_file['led']['port'] = info.port
 
-        with open(r'service_config.yml', 'w') as file:
-            yaml.dump(dict_file, file)
+            with open(r'service_config.yml', 'w') as file:
+                yaml.dump(dict_file, file)
+
+        except TypeError:
+            with open(r'service_config.yml', 'w') as file:
+                yaml.dump(dict_file, file)
 
 
 class ConfigTunables(NamedTuple):
@@ -114,9 +121,6 @@ class LEDInputs(NamedTuple):
 
 def config_parse():
     # Use Yaml library to parse config program tunables
-    # current_path = os.path.abspath(os.getcwd())
-    # with open(current_path + '\\\\service_config.yml', 'r') as file:
-    #     config_file = yaml.safe_load(file)
     with open('service_config.yml', 'r') as file:
         config_file = yaml.safe_load(file)
     return_item = ConfigTunables(config_file['flask']['host_address'],   # 0
@@ -129,14 +133,6 @@ def config_parse():
 
 
 config = config_parse()
-
-
-def canvas_parse(input_string):
-    course_id = config[2]
-    token = config[3]
-    file = input_string
-    return_item = CanvasInputs(input_string, course_id, token, file)
-    return return_item
 
 
 def led_parse(input_string):
@@ -174,16 +170,19 @@ def canvas_get_request(filename):
                     files_dict[f['display_name']] = f['id']
                 # print(files_dict)
 
-                file_id = files_dict[filename]
+                if filename in files_dict:
+                    file_id = files_dict[filename]
 
-                r1 = requests.get(f'https://vt.instructure.com/api/v1/courses/{course_id}/files/{file_id}', parameters)
+                    r1 = requests.get(f'https://vt.instructure.com/api/v1/courses/{course_id}/files/{file_id}', parameters)
 
-                file_url = json.loads(r1.text)["url"]
+                    file_url = json.loads(r1.text)["url"]
 
-                r2 = requests.get(file_url, parameters)
-                with open(filename, 'wb') as f:
-                    f.write(r2.content)
-                return r2.text
+                    r2 = requests.get(file_url, parameters)
+                    with open(filename, 'wb') as f:
+                        f.write(r2.content)
+                    return r2.text
+                else:
+                    return 'File not found'
 
 
 def canvas_post_request(filename):
@@ -254,18 +253,18 @@ def canvas_post_request(filename):
 
 
 def led_post_request(input_string, status, color, intensity):
-    l = led_parse(input_string)
-    if not(l[2] in status):
-        print(f"{l[2]} not a choice of {status}")
+    set_l = led_parse(input_string)
+    if not(set_l[2] in status):
+        print(f"{set_l[2]} not a choice of {status}")
         return
-    elif not(l[3] in color):
-        print(f"{l[3]} not in colors {color}")
+    elif not(set_l[3] in color):
+        print(f"{set_l[3]} not in colors {color}")
         return
-    elif not(l[4] in intensity):
-        print(f"{l[4]} not in intensity range 0 to 255")
+    elif not(0 <= int(set_l[4]) <= 255):
+        print(f"{set_l[4]} not in intensity range 0 to 255")
         return
-    r = requests.post(url='http://' + l[5] + ':' + str(l[6]) +
-                      '/LED?status=' + l[2] + '&color=' + l[3] + '&intensity=' + l[4],
+    r = requests.post(url='http://' + set_l[5] + ':' + str(set_l[6]) +
+                      '/LED?status=' + set_l[2] + '&color=' + set_l[3] + '&intensity=' + set_l[4],
                       headers={'Connection': 'close'})
     return r
 
@@ -280,14 +279,14 @@ def main():
     zeroconf = Zeroconf()
     listener = MyListener()
     ServiceBrowser(zeroconf, "_LED._tcp.local.", listener)
-    info = zeroconf.get_service_info('_LED._tcp.local.', 'rasberrypi._LED._tcp.local.')
+    info = zeroconf.get_service_info('_LED._tcp.local.', 'raspberrypi._LED._tcp.local.')
 
     while info is None:
         print('No pi LED found retrying in 5 seconds.')
         time.sleep(5)
-        info = zeroconf.get_service_info('_LED._tcp.local.', 'rasberrypi._LED._tcp.local.')
+        info = zeroconf.get_service_info('_LED._tcp.local.', 'raspberrypi._LED._tcp.local.')
 
-    time.sleep(5)
+    # time.sleep(5)
 
     status_options = info.properties[b'STATUS'].decode('utf-8')
 
@@ -300,43 +299,69 @@ def main():
 
     # https://127.0.0.1:5000/Canvas?file=<filename>&operation=<upload or download>
 
-    @app.route('/Canvas')
+    @app.route('/Canvas', methods=['GET', 'POST'])
     @auth.login_required(optional=True)
     def canvas():
         user = auth.current_user()
         if user is not False:  # if the user is valid, aka it exists
             args = request.args
             if 'operation' in args:
-                filename = args['file']
-                operation = args['operation']
-                if operation == 'upload':
-                    r = canvas_post_request(filename)
-                    if r == 'File not found':
-                        return 'File not found\n'
-                    else:
+                if 'file' in args:
+                    filename = args['file']
+                    operation = args['operation']
+                    if operation == 'upload':
+                        r = canvas_post_request(filename)
+                        if r == 'File not found':
+                            return 'File not found\n'
+                        else:
+                            return 'DONE\n'
+                    elif operation == 'download':
+                        canvas_get_request(filename)
                         return 'DONE\n'
-                elif operation == 'download':
-                    canvas_get_request(filename)
-                    return 'DONE\n'
+                else:
+                    return 'No file parameter\n'
             else:
-                return 'No operation detected.\n'
+                # No operation detected
+                if 'file' in args:
+                    filename = args['file']
+                    if request.method == 'GET':
+                        r = canvas_get_request(filename)
+                        if r == 'File not found':
+                            return 'File not found\n'
+                        else:
+                            return 'DONE\n'
+                    elif request.method == 'POST':
+                        print(request.files)
+                        f = request.files['file']
+                        f.save(filename)
+                        r = canvas_post_request(filename)
+                        if r == 'File not found':
+                            return 'File not found\n'
+                        else:
+                            return 'DONE\n'
+                    else:
+                        return 'Method was neither POST or GET\n'
+                else:
+                    return 'No file parameter\n'
         else:
             return 'Could not verify your access level for that URL.  You have to login with proper credentials\n'
 
     # https://127.0.0.1:5000/LED?command=<status>-<color>-<intensity>
 
-    @app.route('/LED')
+    @app.route('/LED', methods=['GET', 'POST'])
     @auth.login_required(optional=True)
     def led():
         user = auth.current_user()
         if user is not False:  # if the user is valid, aka it exists
             args = request.args
-            if 'command' in args:
+            if 'command' in args and request.method == 'POST':
                 command = args['command']
-                print(led_post_request(command, status_options, color_options, intensity_options).text)
+                led_post_request(command, status_options, color_options, intensity_options)
                 return 'DONE\n'
+            elif request.method == 'GET':
+                return led_get_request().text
             else:
-                return(led_get_request().text)
+                return 'Method was neither POST or GET\n'
         else:
             return 'Could not verify your access level for that URL.  You have to login with proper credentials\n'
 
@@ -351,11 +376,6 @@ def main():
         return x["username"]
 
     app.run(host=config[0], port=config[1], debug=True)
-
-
-def run(cmd):
-    completed = subprocess.run(["powershell", "-Command", cmd], capture_output=True, shell=True)
-    return completed
 
 
 if __name__ == '__main__':
